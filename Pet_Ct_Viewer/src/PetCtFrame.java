@@ -165,8 +165,8 @@ public class PetCtFrame extends javax.swing.JFrame implements KeyListener, Windo
 		ctWidth[3] = 2000;
 		ctLevel[4] = 40;	// Brain-Sinus
 		ctWidth[4] = 80;
-		ArrayList<ImagePlus> imgList = new ArrayList<ImagePlus>();
-		ArrayList<Integer> seriesType = new ArrayList<Integer>();
+		ArrayList<ImagePlus> imgList = new ArrayList<>();
+		ArrayList<Integer> seriesType = new ArrayList<>();
 		for( i=0; i<foundData; i++) {
 			j = chosen.get(i);
 			k = chooseDlg.getSeriesType(j);
@@ -187,9 +187,9 @@ public class PetCtFrame extends javax.swing.JFrame implements KeyListener, Windo
 			keyDelay[i] = j;
 			j = (int) (j * 1.3);
 		}
-		if( conferenceList == null) conferenceList = new ArrayList<Object>();
+		if( conferenceList == null) conferenceList = new ArrayList<>();
 		conferenceList.add(this);
-		if(extList == null) extList = new ArrayList<Object>();
+		if(extList == null) extList = new ArrayList<>();
 		addWindowFocusListener(this);
 	}
 	
@@ -465,7 +465,7 @@ public class PetCtFrame extends javax.swing.JFrame implements KeyListener, Windo
 	int  [] getImageList( ArrayList<Object> petImages) {
 		int [] IDList = null;
 		int i, n;
-		ArrayList<Integer> ID1 = new ArrayList<Integer>();
+		ArrayList<Integer> ID1 = new ArrayList<>();
 		addImage(petCtPanel1.petPipe, petImages, ID1);
 		addImage(petCtPanel1.upetPipe, petImages, ID1);
 		addImage(petCtPanel1.ctPipe, petImages, ID1);
@@ -559,6 +559,19 @@ public class PetCtFrame extends javax.swing.JFrame implements KeyListener, Windo
 		petCtPanel1.m_ctMa = ChoosePetCt.parseInt(tmp);
 		if( opName == null) opName = ChoosePetCt.getDicomValue(meta, "0008,1070");
 		petCtPanel1.operatorName = opName;
+	}
+
+	String generateFileNameExt(int type, boolean spcSwap) {
+		String retVal;
+		if( type == 0) {
+			retVal = m_patName.replace('.', ' ').trim();
+			retVal = retVal.replaceAll("[,/]", "_");
+		} else {
+			retVal = ChoosePetCt.UsaDateFormat(getStudyDate());
+			retVal = retVal.replace(", ", "_");
+		}
+		if( spcSwap) return retVal.replace(' ', '_');
+		return retVal;
 	}
 
 	void fillSUV_SUL(boolean showFlg) {
@@ -1227,6 +1240,7 @@ public class PetCtFrame extends javax.swing.JFrame implements KeyListener, Windo
 		for( i=-1; i<frList.length; i++) {
 			if( i>=0) {
 				win = frList[i];
+                if( win==null ) continue;
 				title = win instanceof Frame?((Frame)win).getTitle():((Dialog)win).getTitle();
 			}
 			item1 = new javax.swing.JMenuItem(title);
@@ -1272,7 +1286,12 @@ public class PetCtFrame extends javax.swing.JFrame implements KeyListener, Windo
 			}
 		}
 	}
-	
+
+	void scriptMip() {
+		SaveMip dlg = new SaveMip(this, true);
+		dlg.scriptAction();
+	}
+
 	void annotationSave(int indx) {
 		Annotations currAno = getPetCtPanel1().anotateDlg;
 		AnoToolBar currAnoTb = getPetCtPanel1().anotateTB;
@@ -2561,6 +2580,7 @@ public class PetCtFrame extends javax.swing.JFrame implements KeyListener, Windo
 
 	private void jMenuSaveMipActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuSaveMipActionPerformed
 		SaveMip dlg = new SaveMip(this, true);
+//		dlg.scriptAction();
 		dlg.setVisible(true);
 		dlg.doAction(null);
 	}//GEN-LAST:event_jMenuSaveMipActionPerformed

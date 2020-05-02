@@ -18,6 +18,7 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Window;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.ColorModel;
@@ -332,6 +333,31 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
 		changeCDSelected(jCurrCD + 1);
 	}
 
+	// set force dicom dir under external control, groovy
+	void setForceDicomDir(boolean val) {
+		jChkForceDicomDir.setSelected(val);
+		fillReadTable(true);
+	}
+
+	// run reader under external control, groovy
+	int extReadButton(int rowNum, int rowEnd) {	// range of rows selected
+		int i, n = jTable1.getRowCount();
+		unselectAllTableEntries();
+		if( rowNum>=0 && rowNum<n) {
+			i = rowEnd;	// rowEnd = 0 means use rowNum
+			if( i<rowNum || i>=n) i = rowNum;
+			jTable1.setRowSelectionInterval(rowNum, i);
+			DefaultTableModel mod1;
+			mod1 = (DefaultTableModel) jTable1.getModel();
+			String series = (String) mod1.getValueAt(rowNum, TBL_SERIES);
+			n = 1;		// single series in folder
+			if( series == null || i > rowNum)
+				n = 2;	// multiple series in folder
+			readButton();
+		}
+		return n;
+	}
+
 	void readButton() {
 		maybeShowWriteMip(null);
 		if( work2 != null) return;
@@ -395,7 +421,7 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
 			selected[i] = jTab.convertRowIndexToModel(selected[i]);
 		}
 
-		imgList = new ArrayList<ImagePlus>();
+		imgList = new ArrayList<>();
 		DefaultTableModel mod1;
 		mod1 = (DefaultTableModel) jTab.getModel();
 		if( readWriteDelFlg != 2) {
@@ -1026,7 +1052,7 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
 		int i, j;
 		String tmp;
 		CD_dirInfo tableEntry, nextEntry;
-		tableList = new ArrayList<CD_dirInfo>();
+		tableList = new ArrayList<>();
 		String path = getCurrPath();
 		try {
 			if( path == null) {
@@ -1115,6 +1141,17 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
 			if( tUID == null || tUID.isEmpty()) sortUID = false;
 			sUIDs[i] = tUID;
 		}
+		// check for changed name by using study UID
+		if( sortUID) {
+			for( i=0; i<n; i++) {
+				sUID0 = sUIDs[i];
+				name0 = names[i];
+				for( j=1; j<n; j++) {
+					sUID1 = sUIDs[j];
+					if( sUID0.equals(sUID1)) names[j] = name0;
+				}
+			}
+		}
 		// now sort for name ascending, date descending
 		i = 0;
 		while( i < n-1) {
@@ -1160,7 +1197,7 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
 			else i++;
 		}
 		if( !dirty) return;
-		sortedList = new ArrayList<CD_dirInfo>();
+		sortedList = new ArrayList<>();
 		for( i=0; i<n; i++) {
 			j = indx[i];
 			tableEntry = tableList.get(j);
@@ -1197,7 +1234,7 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
 					if( n1 <= 0) continue;
 					img1 = dcm.m_aImage.get(off2);
 					tableEntry = new CD_dirInfo();
-					tableEntry.flList = new ArrayList<File>();
+					tableEntry.flList = new ArrayList<>();
 					for(k=0; k<n1; k++) {
 						img2 = dcm.m_aImage.get(off2+k);
 						flPath = new File(path + File.separatorChar + img2.dirName);
@@ -1275,6 +1312,22 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
 			}
 		}
 		return retVal;
+	}
+
+	// used in groovy script- priority to visible windows
+	public Window getDlgWindow(String fndWnd) {
+		Window[] wins = Window.getWindows();
+		Window winRet = null;
+		int i, n = wins.length;
+		String tmp;
+		for(i=0; i<n; i++) {
+			tmp = wins[i].toString();
+			if(tmp.startsWith(fndWnd)) {
+				winRet = wins[i];
+				if(winRet.isVisible()) return winRet;
+			}
+		}
+		return winRet;
 	}
 
 	@Override
@@ -1728,7 +1781,7 @@ public class ReadCdStudies extends javax.swing.JFrame implements MouseListener {
             }
         });
 
-        jLabel12.setText("version: 2.12");
+        jLabel12.setText("version: 2.17");
 
         jLabJava.setText("jLabel13");
 

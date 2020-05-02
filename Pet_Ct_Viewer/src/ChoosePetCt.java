@@ -102,6 +102,7 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 	
 	static final String SOPCLASS_SC = "1.2.840.10008.5.1.4.1.1.7";
 	static final String SOPCLASS_NM = "1.2.840.10008.5.1.4.1.1.20";
+	static final String SOPCLASS_SR = "1.2.840.10008.5.1.4.1.1.88.67";	// Radiation Dose
 	static final int XRES = 100, YRES = 63;
     /** Creates new form ChoosePetCt
 	 * @param parent
@@ -174,8 +175,8 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 	protected ArrayList<Integer> getStudyList() {
 		TableModel mod1 = jTable1.getModel();
 		int i, j, k, n = mod1.getRowCount();
-		ArrayList<Integer> selVals = new ArrayList<Integer>();
-		seriesForce = new ArrayList<Integer>();
+		ArrayList<Integer> selVals = new ArrayList<>();
+		seriesForce = new ArrayList<>();
 		Boolean sel1;
 		String serType;
 		boolean readEn = false;
@@ -309,9 +310,10 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 		DefaultTableModel mod1;
 		mod1 = (DefaultTableModel) jTable1.getModel();
 		mod1.setNumRows(0);
-		imgList = new ArrayList<ImagePlus>();
-		seriesType = new ArrayList<Integer>();
-		seriesUIDs = new ArrayList<String>();
+		imgList = new ArrayList<>();
+		seriesType = new ArrayList<>();
+		seriesUIDs = new ArrayList<>();
+		seriesName = new ArrayList<>();
 		ImagePlus img1;
 		String meta, patName, study, series, tmp1;
 		Date date1;
@@ -361,6 +363,7 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 			imgList.add(img1);
 			seriesType.add(serType);
 			seriesUIDs.add(getSeriesUID(meta));
+			seriesName.add(series);
 		}
 	}
 	
@@ -373,7 +376,29 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 		if(serType == SERIES_MRI) val1 = "MRI";
 		row1[TBL_SER_TYPE] = val1;
 	}
-	
+
+	// getSeriesName, setCheckBox and pressOkCancel are used in groovy scripts
+	public String getSeriesName(int indx) {
+		if( seriesName == null) return null;
+		if( indx >= seriesName.size()) return null;
+		return seriesName.get(indx);
+	}
+
+	public void setCheckBox(int indx) {
+		TableModel mod1 = (DefaultTableModel) jTable1.getModel();
+		if( indx>=mod1.getRowCount()) return;
+		mod1.setValueAt(true, indx, 0);
+	}
+
+	public int pressOkCancel() {
+		if(jButOK.isEnabled()) {
+			jButOK.doClick();
+			return 1;
+		}
+		jButCancel.doClick();
+		return 0;
+	}
+
 	static String UsaDateFormat( Date inDate) {
 		if(inDate == null) return "";
 		return DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.US).format(inDate);
@@ -515,7 +540,7 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 		int i = retVal.indexOf('^');
 		if( i < 0) return retVal;
 		retVal = retVal.substring(0, i) + "," + retVal.substring(i+1);
-		retVal = retVal.replace('^', ' ');
+		retVal = retVal.replace('^', ' ').trim();
 		return retVal;
 	}
 
@@ -587,7 +612,14 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 		}
 		// use study date since the injection may be 24 or 48 hours earlier
 		tmp1 = getDicomValue(meta,key0);
-		if(tmp1==null) tmp1 = getDicomValue(meta,"0008,0020");
+		if(tmp1==null) {
+			tmp1 = getDicomValue(meta,"0008,0020");
+			if( tmp1 == null) return null;
+			// be careful of bad study dates like 1899
+			if(Integer.valueOf(tmp1.substring(0, 4)) < 1980) {
+				tmp1 = getDicomValue(meta,"0008,0021");
+			}
+		}
 		return getDateTime( tmp1, time1);
 	}
 
@@ -1165,11 +1197,11 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 			char c1;
 			Scanner sc;
 			ArrayList<Integer> pos, frmNm, yPos;
-			ArrayList<String> strVals = new ArrayList<String>();
+			ArrayList<String> strVals = new ArrayList<>();
 			FileReader fl1 = new FileReader(path);
 			BufferedReader br1 = new BufferedReader(fl1);
-			frmNm = new ArrayList<Integer>();
-			yPos = new ArrayList<Integer>();
+			frmNm = new ArrayList<>();
+			yPos = new ArrayList<>();
 			while( (tmp = br1.readLine()) != null) {
 				if( line1) {
 					line1 = false;
@@ -1188,7 +1220,7 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 				tmpStr = tmp.substring(i1+1);
 				tmp = tmp.substring(0, i1);
 				sc = new Scanner(tmp).useDelimiter(",");
-				pos = new ArrayList<Integer>();
+				pos = new ArrayList<>();
 				while( sc.hasNextInt()) {
 					i1 = sc.nextInt();
 					pos.add(i1);
@@ -1442,6 +1474,7 @@ public class ChoosePetCt extends javax.swing.JDialog implements TableModelListen
 	ArrayList<Integer> seriesForce = null;
 	ArrayList<Integer> chosenOnes = null;
 	ArrayList<String> seriesUIDs = null;
+	ArrayList<String> seriesName = null;
 	static String userDir = null;
 	static PetCtPanel MipPanel = null;
 	static int loadingData = 0;	// not loading
